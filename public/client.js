@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const hostControls = document.getElementById('host-controls');
     const questionContainer = document.getElementById('question-container');
     const questionInput = document.getElementById('question-input');
+    const mainGameArea = document.getElementById('main-game-area'); // 메인 영역
     const gameBoard = document.getElementById('game-board');
+    const rankingBoardContainer = document.getElementById('ranking-board-container'); // 질문 페이즈 랭킹 보드
+    const rankingBoardContainerResult = document.getElementById('ranking-board-container-result'); // 결과 페이즈 랭킹 보드
     const resultsSection = document.getElementById('results');
     const resultSummary = document.getElementById('result-summary');
     const viewResultsButton = document.getElementById('view-results-button');
@@ -145,26 +148,55 @@ document.addEventListener('DOMContentLoaded', () => {
     viewResultsButton.addEventListener('click', () => socket.emit('viewResults', { roomCode: myRoomCode }));
     resetRoundButton.addEventListener('click', () => socket.emit('resetRound', { roomCode: myRoomCode }));
 
+    // --- Helper Functions ---
+    function formatNumber(num) {
+        if (Number.isInteger(num)) return num;
+        return num.toFixed(1);
+    }
+
     // --- Render Functions ---
     function renderGame(gameState) {
         const players = Object.values(gameState.players);
         const me = players.find(p => p.id === myPlayerId);
         const amIHost = me && me.isHost;
+        const isWaitingPhase = gameState.state !== 'results';
 
-        questionContainer.classList.toggle('hidden', gameState.state === 'results');
-        gameBoard.classList.toggle('hidden', gameState.state === 'results');
-        resultsSection.classList.toggle('hidden', gameState.state !== 'results');
+        // UI 요소 보이기/숨기기
+        questionContainer.classList.toggle('hidden', !isWaitingPhase);
+        mainGameArea.classList.toggle('hidden', !isWaitingPhase);
+        resultsSection.classList.toggle('hidden', isWaitingPhase);
         hostControls.classList.toggle('hidden', !amIHost);
-        viewResultsButton.classList.toggle('hidden', gameState.state === 'results' || !amIHost);
-        resetRoundButton.classList.toggle('hidden', gameState.state !== 'results' || !amIHost);
+        viewResultsButton.classList.toggle('hidden', !isWaitingPhase || !amIHost);
+        resetRoundButton.classList.toggle('hidden', isWaitingPhase || !amIHost);
 
         questionInput.value = gameState.question;
         questionInput.disabled = !amIHost;
 
+        // 누적 순위 계산 (점수가 낮을수록 순위가 높음)
+        const sortedByScore = [...players].sort((a, b) => a.cumulativeScore - b.cumulativeScore);
+        let currentRank = 1;
+        for (let i = 0; i < sortedByScore.length; i++) {
+            if (i > 0 && sortedByScore[i].cumulativeScore > sortedByScore[i-1].cumulativeScore) {
+                currentRank = i + 1;
+            }
+            const playerToUpdate = players.find(p => p.id === sortedByScore[i].id);
+            if (playerToUpdate) {
+                playerToUpdate.cumulativeRank = currentRank;
+            }
+        }
+        
+        // 플레이어 카드 렌더링
         gameBoard.innerHTML = '';
         players.forEach(player => {
             gameBoard.appendChild(createPlayerCard(player, player.id === myPlayerId));
         });
+
+        // 누적 랭킹 보드 렌더링 (화면 상태에 따라 다른 위치에)
+        if (isWaitingPhase) {
+            renderRankingBoard(sortedByScore, rankingBoardContainer);
+        } else {
+            renderRankingBoard(sortedByScore, rankingBoardContainerResult);
+        }
         
         const allSubmitted = players.length > 0 && players.every(p => p.submitted);
         viewResultsButton.disabled = !allSubmitted;
@@ -184,25 +216,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (player.submitted) card.classList.add('submitted');
 
         const textColor = (player.color === '#fff176') ? '#000000' : '#ffffff';
-        const numberInputType = (player.submitted) ? 'password' : 'text';
-
+        
         let contentHtml;
         if (isMe) {
+            // 본인 카드
             contentHtml = `
                 <div class="player-info-text">
                     <div class="player-name">${player.name}</div>
                 </div>
                 <div class="input-area">
-                    <input type="${numberInputType}" class="number-input" placeholder="-" value="${player.value || ''}" ${player.submitted ? 'disabled' : ''}>
+                    <input type="text" class="number-input" placeholder="-" value="${player.value || ''}" ${player.submitted ? 'disabled' : ''}>
                     <button class="btn-submit" data-action="submit" style="background-color: ${player.color}; color: ${textColor};">${player.submitted ? '취소' : '완료'}</button>
                 </div>
             `;
         } else {
+            // 다른 플레이어 카드
+            const statusMessage = player.submitted ? '입력 완료!' : '입력 대기중...';
             contentHtml = `
                 <div class="player-info-text">
-                    <div class="player-name">${player.name}</div>
-                    <div class="player-status">${player.submitted ? '입력 완료!' : '입력 대기중...'}</div>
+                     <div class="player-name">${player.name}</div>
                 </div>
+                <div class="player-status-display">${statusMessage}</div>
             `;
         }
         
@@ -217,13 +251,41 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         return card;
     }
+
+    function renderRankingBoard(sortedPlayers, container) {
+        const rankingListHtml = sortedPlayers.map(p => {
+            const isFirst = p.cumulativeRank === 1;
+            const rankDisplay = isFirst ? '👑' : p.cumulativeRank;
+            // 1위인 경우, 플레이어 색상으로 스타일링
+            const rankStyle = isFirst ? `style="--rank-color: ${p.color}"` : '';
+            return `
+            <li class="${isFirst ? 'first-place' : ''}" ${rankStyle}>
+                <span class="rank">${rankDisplay}</span>
+                <img src="${p.imageSrc}" class="profile-image-rank">
+                <span class="name">${p.name}</span>
+                <span class="score">${p.cumulativeScore.toFixed(1)}%</span>
+            </li>
+        `;
+        }).join('');
+
+        container.innerHTML = `
+            <h3>누적 랭킹</h3>
+            <ol>${rankingListHtml}</ol>
+        `;
+    }
     
     function renderResults(gameState) {
-        const players = Object.values(gameState.players);
+        const players = Object.values(gameState.players).filter(p => p.submitted);
+        if (players.length === 0) return;
+        
         const total = players.reduce((sum, p) => sum + p.value, 0);
         const average = total / players.length;
 
-        players.forEach(p => p.diff = Math.abs(p.value - average));
+        players.forEach(p => {
+            p.diff = Math.abs(p.value - average);
+            p.diffRatio = (average > 0) ? (p.diff / average) * 100 : (p.value === 0 ? 0 : 100);
+        });
+        
         players.sort((a, b) => a.diff - b.diff);
 
         let rank = 1;
@@ -232,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             players[i].rank = rank;
         }
         const maxRank = Math.max(...players.map(p => p.rank));
-        const maxDiff = Math.max(...players.map(p => p.diff), 1);
+        const maxDiffRatio = Math.max(...players.map(p => p.diffRatio), 1);
         
         const rankingHtml = players.map(p => {
             let rankDisplay;
@@ -241,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else { rankDisplay = `${p.rank}위`; }
             
             const isWinner = p.rank === 1;
-            const barWidth = (p.diff / maxDiff) * 100;
+            const barWidth = (p.diffRatio / maxDiffRatio) * 100;
 
             return `
             <li class="${isWinner ? 'winner' : ''}" style="${isWinner ? `--winner-color: ${p.color};` : ''}">
@@ -252,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="result-details">
                     <span class="submitted-value">입력: <b>${p.value}</b></span>
-                    <span class="diff-value">(차이: ${p.diff.toFixed(2)})</span>
+                    <span class="diff-value">(차이: ${formatNumber(p.diff)}, 비율: ${p.diffRatio.toFixed(1)}%)</span>
                     <div class="diff-bar-wrapper">
                         <div class="diff-bar" style="width: ${barWidth}%; background-color: ${p.color};"></div>
                     </div>
@@ -261,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         resultSummary.innerHTML = `
-            <h2>${gameState.question || '게임 결과'}</h2>
+            <h2>${gameState.question || '이번 라운드 결과'}</h2>
             <p class="average-value">평균값: ${average.toFixed(2)}</p>
             <ol id="ranking-list">${rankingHtml}</ol>`;
     }

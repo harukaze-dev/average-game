@@ -34,7 +34,8 @@ io.on('connection', (socket) => {
         rooms[roomCode].players[socket.id] = {
             id: socket.id, name: playerName, color: '#e57373',
             imageSrc: profileImageSrc, // 로비에서 설정한 이미지 사용
-            value: null, submitted: false, isHost: true 
+            value: null, submitted: false, isHost: true,
+            cumulativeScore: 0 // 누적 점수 추가
         };
         
         socket.emit('roomCreated', { roomCode });
@@ -53,7 +54,8 @@ io.on('connection', (socket) => {
         rooms[roomCode].players[socket.id] = {
             id: socket.id, name: playerName, color: PLAYER_COLORS[playerCount % 12],
             imageSrc: profileImageSrc, // 로비에서 설정한 이미지 사용
-            value: null, submitted: false, isHost: false
+            value: null, submitted: false, isHost: false,
+            cumulativeScore: 0 // 누적 점수 추가
         };
         
         socket.emit('roomJoined', { roomCode });
@@ -82,6 +84,26 @@ io.on('connection', (socket) => {
     socket.on('viewResults', ({ roomCode }) => {
         const room = rooms[roomCode];
         if(room && room.players[socket.id] && room.players[socket.id].isHost) {
+            // 이미 결과 상태이면 중복 계산 방지
+            if (room.state === 'results') return;
+            
+            const players = Object.values(room.players);
+            const submittedPlayers = players.filter(p => p.submitted && p.value !== null);
+            if (submittedPlayers.length === 0) return;
+
+            // 누적 점수 계산
+            const total = submittedPlayers.reduce((sum, p) => sum + p.value, 0);
+            const average = total / submittedPlayers.length;
+
+            players.forEach(p => {
+                if (p.submitted && p.value !== null) {
+                    const diff = Math.abs(p.value - average);
+                    // 평균이 0일 경우 예외 처리
+                    const diffRatio = (average > 0) ? (diff / average) * 100 : (p.value === 0 ? 0 : 100);
+                    p.cumulativeScore += diffRatio;
+                }
+            });
+
             room.state = 'results';
             io.to(roomCode).emit('updateGameState', getGameState(roomCode));
         }
@@ -95,6 +117,7 @@ io.on('connection', (socket) => {
                 p.submitted = false;
                 p.value = null;
             });
+            // 누적 점수는 초기화하지 않음
             io.to(roomCode).emit('updateGameState', getGameState(roomCode));
         }
     });

@@ -1,85 +1,549 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap');
-:root { --accent-color: #FFC107; --dark-blue: #1c2541; --light-blue: #2a3a5f; }
+/*
+ * ===================================================================
+ * 평균값 게임 - 스타일시트 (style.css) - 상세 주석 버전
+ * ===================================================================
+ */
 
+/* --- 1. 전역 설정 및 변수 --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap'); /* 구글 웹 폰트(Poppins, Noto Sans KR)를 불러옵니다. */
+
+:root { /* CSS 전체에서 사용할 사용자 지정 변수를 선언합니다. */
+    --accent-color: #FFC107;             /* 보조 강조 색상 (노랑 계열) */
+    --mint-color: #4db6ac;               /* 주 강조 색상 (민트 계열) */
+    --primary-color: #3f51b5;            /* 기본 테마 색상 (파랑 계열) */
+    --light-bg: #f5f7fa;                 /* 밝은 배경 색상 */
+    --dark-text: #333;                   /* 어두운 텍스트 색상 */
+}
+
+
+/* --- 2. 기본 레이아웃 및 공통 스타일 --- */
 body { 
-    font-family: 'Poppins', 'Noto Sans KR', sans-serif; 
-    background: linear-gradient(135deg, var(--dark-blue), var(--light-blue)); 
-    color: #f0f2f5; 
-    margin: 0; padding: 20px; 
-    box-sizing: border-box; 
-    min-height: 100vh;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
+    font-family: 'Poppins', 'Noto Sans KR', sans-serif; /* 페이지의 기본 글꼴을 설정합니다. */
+    background: linear-gradient(135deg, #e0f7fa, #e8f5e9); /* 페이지 배경에 선형 그라데이션을 적용합니다. */
+    color: var(--dark-text);             /* 페이지의 기본 텍스트 색상을 변수로 지정합니다. */
+    margin: 0;                           /* body의 기본 바깥쪽 여백을 제거합니다. */
+    padding: 20px;                       /* body의 안쪽 여백을 20px로 설정합니다. */
+    box-sizing: border-box;              /* padding과 border를 너비/높이에 포함시켜 계산합니다. */
+    min-height: 100vh;                   /* 최소 높이를 화면 전체 높이로 설정합니다. */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    justify-content: flex-start;         /* 자식 요소를 왼쪽부터 정렬합니다. */
+    align-items: flex-start;             /* 자식 요소를 위쪽부터 정렬합니다. */
 }
-body.in-lobby {
-    justify-content: center;
-    align-items: center;
+
+body.in-lobby { /* 'in-lobby' 클래스가 body에 있을 때 (로비 화면) */
+    justify-content: center;             /* 자식 요소를 수평 중앙에 정렬합니다. */
+    align-items: center;                 /* 자식 요소를 수직 중앙에 정렬합니다. */
 }
-#app-wrapper { width: 100%; max-width: 1400px; }
-.hidden { display: none !important; }
 
-/* --- 토스트 알림 스타일 --- */
-#toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;}
-.toast { padding: 12px 20px; border-radius: 8px; color: white; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: slideInRight 0.3s ease-out forwards; }
-.toast.fade-out { animation: slideOutRight 0.5s ease-in forwards; }
-.toast.join { background-color: #4CAF50; }
-.toast.leave { background-color: #f44336; }
-@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes slideOutRight { to { transform: translateX(100%); opacity: 0; } }
+#app-wrapper { /* 전체 애플리케이션을 감싸는 컨테이너 */
+    width: 100%;                         /* 너비를 100%로 설정합니다. */
+    max-width: 1400px;                   /* 최대 너비를 1400px로 제한합니다. */
+}
 
-/* --- 로비 화면 스타일 --- */
-.lobby-container { text-align: center; animation: fadeIn 0.5s; background: rgba(255, 255, 255, 0.1); padding: 2rem; border-radius: 24px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); max-width: 600px; margin: auto; }
-.lobby-container h1 { color: white; font-size: 3rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-.lobby-step { margin-top: 2rem; }
-.lobby-step h2 { color: #eee; font-size: 1.2rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem; }
-.lobby-profile-container { margin-bottom: 1rem; }
-.lobby-profile-container p { font-size: 0.9rem; color: #ccc; margin-top: 0.5rem; }
-#lobby-profile-preview { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid rgba(255,255,255,0.5); cursor: pointer; }
-#room-actions { display: flex; gap: 1.5rem; margin-top: 2rem; animation: fadeIn 0.5s; }
-.action-box { flex: 1; background: rgba(0,0,0,0.1); padding: 1.5rem; border-radius: 16px; }
-.action-box h3 { margin-top: 0; color: #ddd; }
-#player-name-input, #room-code-input { width: 100%; padding: 0.8rem; font-size: 1.1rem; border-radius: 8px; border: none; box-sizing: border-box; background-color: rgba(255,255,255,0.9); color: #333; text-align: center; }
-#room-actions button { width: 100%; padding: 0.8rem; font-size: 1.2rem; font-weight: bold; background-color: var(--accent-color); color: #333; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; margin-top: 1rem; }
-#room-actions button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.hidden { /* 숨김 처리를 위한 공용 클래스 */
+    display: none !important;            /* 요소를 화면에서 완전히 보이지 않게 합니다. !important로 다른 스타일을 덮어씁니다. */
+}
 
-/* --- 게임 컨테이너 --- */
-.container { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); padding: 2rem; border-radius: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); text-align: left; border: 1px solid rgba(255, 255, 255, 0.2); color: #333; animation: fadeIn 0.5s; }
-.container h1 { color: var(--dark-blue); font-size: 2.5rem; text-align: center; }
-#top-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.5rem; padding-bottom: 1rem; width: 100%; margin: 0 auto 1rem auto; border-bottom: 1px solid #e0e0e0; }
-#host-controls button, #copy-code-btn { padding: 0.5rem 1rem; font-size: 1rem; font-family: 'Poppins', 'Noto Sans KR', sans-serif; border-radius: 8px; border: none; cursor: pointer; transition: all 0.3s ease; background-color: var(--accent-color); color: #333; font-weight: bold; }
-#view-results-button:disabled { background-color: #ccc; border-color: #ccc; cursor: not-allowed; }
-#question-container { margin-bottom: 2rem; }
-#question-input { width: 100%; padding: 1rem; font-size: 2.0rem; font-weight: 700; color: var(--dark-blue); border: 2px solid transparent; background-color: rgba(224, 224, 224, 0.3); border-radius: 12px; box-sizing: border-box; text-align: center; }
 
-/* --- 게임 보드 --- */
-#game-board { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-.player-card { background-color: #ffffff; border-radius: 16px; padding: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 8px solid; box-sizing: border-box; transition: all 0.3s ease-out; display: grid; grid-template-columns: 100px 1fr; grid-template-rows: auto; gap: 1.5rem; align-items: center; }
-.player-card.submitted { border-right: 8px solid; background-color: var(--tint-color); }
-.profile-section { grid-column: 1 / 2; }
-.content-section { grid-column: 2 / 3; display: flex; justify-content: space-between; align-items: center; min-width: 0; }
-.profile-image-container { position: relative; cursor: pointer; }
-.profile-image-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid white; }
-.player-info-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-.player-name, .player-status { font-size: 1.6rem; font-weight: bold; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.player-status { color: #888; }
-.input-area { display: flex; margin-left: auto; align-items: stretch; /* 버튼과 입력창 높이 통일 */ }
-.number-input { width: 80%; /* 가로 길이 고정 */ padding: 0.9rem 1rem; font-size: 3rem; /* 폰트 확대 */ text-align: right; border: 1px solid #ccc; border-right: none; border-radius: 8px 0 0 8px; background-color: #f9f9f9; color: #333; }
-.btn-submit { flex-shrink: 0; padding: 0 2rem; /* 너비 확대 */ font-size: 1.4rem; /* 폰트 확대 */ border: 1px solid #ccc; border-left: none; border-radius: 0 8px 8px 0; font-weight: bold; cursor: pointer; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); }
+/* --- 3. 토스트 알림 및 애니메이션 --- */
+#toast-container { /* 토스트 알림들을 담는 컨테이너 */
+    position: fixed;                     /* 화면 스크롤과 관계없이 위치를 고정합니다. */
+    top: 20px;                           /* 화면 상단에서 20px 떨어진 곳에 위치합니다. */
+    right: 20px;                         /* 화면 오른쪽에서 20px 떨어진 곳에 위치합니다. */
+    z-index: 1000;                       /* 다른 요소들보다 위에 표시되도록 z-index를 높게 설정합니다. */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    flex-direction: column;              /* 자식 요소(알림)들을 세로로 쌓습니다. */
+    gap: 10px;                           /* 알림들 사이의 간격을 10px로 설정합니다. */
+}
 
-/* --- 결과 섹션 --- */
-#results { width: 100%; margin: 0 auto 2rem auto; }
-#result-summary { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-#result-summary h2 { text-align: center; color: var(--dark-blue); font-size: 1.8rem; }
-.average-value { text-align: center; font-size: 1.5rem; font-weight: bold; margin: 1rem 0 1.5rem 0; }
-#ranking-list { list-style-type: none; padding: 0; }
-#ranking-list li { background: #f9f9f9; margin-bottom: 1rem; padding: 0.8rem 1.5rem; border-radius: 12px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
-#ranking-list li.winner { transform: scale(1.05); font-weight: bold; background: linear-gradient(135deg, #fffde7, #fff3e0); border: 2px solid var(--accent-color); box-shadow: 0 0 20px rgba(255, 193, 7, 0.6); }
-.player-info { display: flex; align-items: center; gap: 15px; }
-.rank-display { font-size: 1.8rem; width: 50px; text-align: center; }
-.profile-image-result { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white; }
-.result-details { display: flex; align-items: center; gap: 1rem; flex-grow: 1; justify-content: flex-end; }
-.submitted-value { min-width: 90px; }
-.diff-value { font-size: 0.9rem; min-width: 70px; }
-.diff-bar-wrapper { flex-basis: 150px; height: 16px; background-color: #e0e0e0; border-radius: 8px; }
-.diff-bar { height: 100%; border-radius: 8px; }
+.toast { /* 개별 토스트 알림 */
+    padding: 12px 20px;                  /* 안쪽 여백을 설정합니다 (상하 12px, 좌우 20px). */
+    border-radius: 8px;                  /* 모서리를 8px만큼 둥글게 만듭니다. */
+    color: white;                        /* 글자 색상을 흰색으로 합니다. */
+    font-weight: bold;                   /* 글자를 굵게 표시합니다. */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* 그림자 효과를 추가합니다. */
+    animation: slideInRight 0.3s ease-out forwards; /* 'slideInRight' 애니메이션을 0.3초 동안 적용합니다. */
+}
+
+.toast.fade-out { /* 사라질 때의 토스트 알림 */
+    animation: slideOutRight 0.5s ease-in forwards; /* 'slideOutRight' 애니메이션을 0.5초 동안 적용합니다. */
+}
+
+.toast.info { background-color: #2196F3; }   /* 정보 알림의 배경색입니다. */
+.toast.join { background-color: #4CAF50; }   /* 입장 알림의 배경색입니다. */
+.toast.leave { background-color: #f44336; }  /* 퇴장 알림의 배경색입니다. */
+
+@keyframes slideInRight { /* 'slideInRight' 애니메이션 정의 */
+    from { transform: translateX(100%); opacity: 0; } /* 시작 상태: 오른쪽 밖, 투명 */
+    to { transform: translateX(0); opacity: 1; }     /* 종료 상태: 제자리, 불투명 */
+}
+
+@keyframes slideOutRight { /* 'slideOutRight' 애니메이션 정의 */
+    to { transform: translateX(100%); opacity: 0; }     /* 종료 상태: 오른쪽 밖, 투명 */
+}
+
+
+/* --- 4. 로비 화면 --- */
+.lobby-container { /* 로비 화면 전체를 감싸는 컨테이너 */
+    text-align: center;                  /* 내부 텍스트를 중앙 정렬합니다. */
+    animation: fadeIn 0.5s;              /* 0.5초 동안 서서히 나타나는 효과를 줍니다. (애니메이션 정의는 생략됨) */
+    background: rgba(255, 255, 255, 0.7); /* 반투명한 흰색 배경을 설정합니다. */
+    padding: 2rem;                       /* 안쪽 여백을 2rem(약 32px)으로 설정합니다. */
+    border-radius: 24px;                 /* 모서리를 24px만큼 둥글게 만듭니다. */
+    backdrop-filter: blur(10px);         /* 배경을 10px만큼 흐리게 만드는 효과를 줍니다. */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* 반투명한 흰색 테두리를 추가합니다. */
+    max-width: 600px;                    /* 최대 너비를 600px로 제한합니다. */
+    margin: auto;                        /* 수평 중앙 정렬을 위해 좌우 마진을 자동으로 설정합니다. */
+}
+
+.lobby-container h1 { /* 로비 제목 */
+    color: var(--primary-color);         /* 제목 색상을 변수로 지정합니다. */
+    font-size: 3rem;                     /* 글자 크기를 3rem(약 48px)으로 설정합니다. */
+    text-shadow: none;                   /* 텍스트 그림자를 제거합니다. */
+}
+
+.lobby-step { /* 로비의 각 단계(프로필, 방 선택)를 묶는 영역 */
+    margin-top: 2rem;                    /* 위쪽 바깥 여백을 2rem으로 설정합니다. */
+}
+
+.lobby-step h2 { /* 단계별 소제목 */
+    color: #555;                         /* 글자 색상을 설정합니다. */
+    font-size: 1.2rem;                   /* 글자 크기를 설정합니다. */
+    margin-bottom: 1rem;                 /* 아래쪽 바깥 여백을 설정합니다. */
+    border-bottom: 1px solid rgba(0,0,0,0.1); /* 아래쪽에 옅은 회색 밑줄을 추가합니다. */
+    padding-bottom: 0.5rem;              /* 밑줄과의 간격을 위해 아래쪽 안쪽 여백을 설정합니다. */
+}
+
+.lobby-profile-container { /* 프로필 설정 영역 */
+    margin-bottom: 1rem;                 /* 아래쪽 바깥 여백을 설정합니다. */
+}
+
+.lobby-profile-container p { /* 프로필 안내 문구 */
+    font-size: 0.9rem;                   /* 글자 크기를 설정합니다. */
+    color: #666;                         /* 글자 색상을 설정합니다. */
+    margin-top: 0.5rem;                  /* 위쪽 바깥 여백을 설정합니다. */
+}
+
+#lobby-profile-preview { /* 프로필 이미지 미리보기 */
+    width: 120px;                        /* 너비를 120px로 고정합니다. */
+    height: 120px;                       /* 높이를 120px로 고정합니다. */
+    border-radius: 50%;                  /* 원형으로 만듭니다. */
+    object-fit: cover;                   /* 이미지가 영역에 꽉 차도록 비율을 유지하며 잘라냅니다. */
+    border: 4px solid rgba(0,0,0,0.1);   /* 옅은 회색 테두리를 추가합니다. */
+    cursor: pointer;                     /* 마우스 커서를 손가락 모양으로 변경합니다. */
+}
+
+#room-actions { /* 방 만들기/참가 버튼 영역 */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    gap: 1.5rem;                         /* 자식 요소(action-box) 사이의 간격을 설정합니다. */
+    margin-top: 2rem;                    /* 위쪽 바깥 여백을 설정합니다. */
+    animation: fadeIn 0.5s;              /* 서서히 나타나는 효과를 줍니다. */
+}
+
+.action-box { /* 방 만들기/참가를 각각 감싸는 박스 */
+    flex: 1;                             /* 가능한 공간을 균등하게 차지합니다. */
+    background: rgba(0,0,0,0.05);        /* 매우 옅은 검은색 배경을 설정합니다. */
+    padding: 1.5rem;                     /* 안쪽 여백을 설정합니다. */
+    border-radius: 16px;                 /* 모서리를 둥글게 만듭니다. */
+}
+
+.action-box h3 { /* action-box 안의 제목 */
+    margin-top: 0;                       /* 위쪽 바깥 여백을 제거합니다. */
+    color: #444;                         /* 글자 색상을 설정합니다. */
+}
+
+#player-name-input, #room-code-input { /* 닉네임, 초대 코드 입력창 */
+    width: 100%;                         /* 너비를 100%로 설정합니다. */
+    padding: 0.8rem;                     /* 안쪽 여백을 설정합니다. */
+    font-size: 1.1rem;                   /* 글자 크기를 설정합니다. */
+    border-radius: 8px;                  /* 모서리를 둥글게 만듭니다. */
+    border: 1px solid #ddd;              /* 옅은 회색 테두리를 추가합니다. */
+    box-sizing: border-box;              /* padding과 border를 너비에 포함시킵니다. */
+    background-color: #fff;              /* 배경색을 흰색으로 합니다. */
+    color: var(--dark-text);             /* 글자 색상을 변수로 지정합니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+}
+
+#room-actions button { /* 로비의 버튼들 */
+    width: 100%;                         /* 너비를 100%로 설정합니다. */
+    padding: 0.8rem;                     /* 안쪽 여백을 설정합니다. */
+    font-size: 1.2rem;                   /* 글자 크기를 설정합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    background-color: var(--accent-color); /* 배경색을 변수로 지정합니다. */
+    color: var(--dark-text);             /* 글자 색상을 변수로 지정합니다. */
+    border: none;                        /* 테두리를 제거합니다. */
+    border-radius: 8px;                  /* 모서리를 둥글게 만듭니다. */
+    cursor: pointer;                     /* 마우스 커서를 손가락 모양으로 변경합니다. */
+    transition: all 0.2s ease;           /* 모든 속성 변경에 0.2초의 부드러운 전환 효과를 줍니다. */
+    margin-top: 1rem;                    /* 위쪽 바깥 여백을 설정합니다. */
+}
+
+#room-actions button:hover { /* 로비 버튼에 마우스를 올렸을 때 */
+    transform: translateY(-2px);         /* 위로 2px 이동하는 효과를 줍니다. */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* 그림자 효과를 줍니다. */
+}
+
+
+/* --- 5. 게임 컨테이너 및 상단 UI --- */
+.container { /* 게임 화면 전체를 감싸는 컨테이너 */
+    background: var(--light-bg);         /* 배경색을 변수로 지정합니다. */
+    padding: 2rem;                       /* 안쪽 여백을 설정합니다. */
+    border-radius: 24px;                 /* 모서리를 둥글게 만듭니다. */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); /* 그림자 효과를 줍니다. */
+    color: var(--dark-text);             /* 기본 글자 색상을 변수로 지정합니다. */
+    animation: fadeIn 0.5s;              /* 서서히 나타나는 효과를 줍니다. */
+}
+
+.container h1 { /* 게임 화면 제목 */
+    color: var(--primary-color);         /* 제목 색상을 변수로 지정합니다. */
+    font-size: 2.5rem;                   /* 글자 크기를 설정합니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+    margin-bottom: 1rem;                 /* 아래쪽 바깥 여백을 설정합니다. */
+}
+
+#top-bar { /* 상단 컨트롤 버튼 영역 */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    flex-wrap: wrap;                     /* 공간이 부족하면 줄바꿈을 허용합니다. */
+    justify-content: space-between;      /* 자식 요소들을 양쪽 끝으로 분산 정렬합니다. */
+    align-items: center;                 /* 자식 요소들을 수직 중앙 정렬합니다. */
+    gap: 1.5rem;                         /* 자식 요소들 사이의 간격을 설정합니다. */
+    padding-bottom: 1rem;                /* 아래쪽 안쪽 여백을 설정합니다. */
+    width: 100%;                         /* 너비를 100%로 설정합니다. */
+    margin: 0 auto 1rem auto;            /* 상하좌우 바깥 여백을 설정하여 중앙 정렬합니다. */
+    border-bottom: 1px solid #e0e0e0;    /* 아래쪽에 옅은 회색 밑줄을 추가합니다. */
+}
+
+#host-controls button, #copy-code-btn { /* 상단 바의 모든 버튼 */
+    padding: 0.5rem 1rem;                /* 안쪽 여백을 설정합니다. */
+    font-size: 1rem;                     /* 글자 크기를 설정합니다. */
+    font-family: 'Poppins', 'Noto Sans KR', sans-serif; /* 글꼴을 설정합니다. */
+    border-radius: 8px;                  /* 모서리를 둥글게 만듭니다. */
+    border: none;                        /* 테두리를 제거합니다. */
+    cursor: pointer;                     /* 마우스 커서를 손가락 모양으로 변경합니다. */
+    transition: all 0.3s ease;           /* 모든 속성 변경에 부드러운 전환 효과를 줍니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+}
+
+#copy-code-btn,                          /* 초대 코드 복사 버튼 */
+#reset-round-button,                     /* 다음 질문 버튼 */
+#view-results-button:not(:disabled) {    /* 결과 보기 버튼 (활성화 상태) */
+    background-color: var(--mint-color); /* 배경색을 민트색 변수로 지정합니다. */
+    color: white;                        /* 글자 색상을 흰색으로 합니다. */
+}
+
+#view-results-button:disabled {          /* 결과 보기 버튼 (비활성화 상태) */
+    background-color: #ccc;              /* 배경색을 회색으로 합니다. */
+    border-color: #ccc;                  /* 테두리 색상을 회색으로 합니다. */
+    cursor: not-allowed;                 /* 마우스 커서를 금지 모양으로 변경합니다. */
+    color: #666;                         /* 글자 색상을 어두운 회색으로 합니다. */
+}
+
+#question-container { /* 질문 입력창을 감싸는 영역 */
+    margin-bottom: 2rem;                 /* 아래쪽 바깥 여백을 설정합니다. */
+}
+
+#question-input { /* 질문 입력창 */
+    width: 100%;                         /* 너비를 100%로 설정합니다. */
+    padding: 1rem;                       /* 안쪽 여백을 설정합니다. */
+    font-size: 2.0rem;                   /* 글자 크기를 설정합니다. */
+    font-weight: 700;                    /* 글자 두께를 설정합니다. */
+    color: var(--primary-color);         /* 글자 색상을 변수로 지정합니다. */
+    border: 2px solid transparent;       /* 투명한 테두리를 설정합니다. (focus 효과 등을 위해) */
+    background-color: rgba(63, 81, 181, 0.05); /* 매우 옅은 파란색 배경을 설정합니다. */
+    border-radius: 12px;                 /* 모서리를 둥글게 만듭니다. */
+    box-sizing: border-box;              /* padding과 border를 너비에 포함시킵니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+}
+
+
+/* --- 6. 메인 게임 영역 (플레이어 카드) --- */
+#main-game-area { /* 게임 보드와 랭킹 보드를 포함하는 주 영역 */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    gap: 2rem;                           /* 자식 요소(게임 보드, 랭킹 보드) 사이의 간격을 설정합니다. */
+    align-items: flex-start;             /* 자식 요소들을 위쪽 기준으로 정렬합니다. */
+}
+
+#game-board { /* 모든 플레이어 카드를 담는 영역 */
+    flex: 3;                             /* 랭킹 보드(flex: 1)에 비해 3배의 공간을 차지합니다. */
+    display: grid;                       /* Grid 레이아웃을 사용합니다. */
+    grid-template-columns: 1fr;          /* 1개의 열로 구성된 그리드를 만듭니다. */
+    gap: 1rem;                           /* 플레이어 카드들 사이의 간격을 설정합니다. */
+}
+
+.player-card { /* 개별 플레이어 카드 */
+    background-color: #ffffff;           /* 배경색을 흰색으로 합니다. */
+    border-radius: 16px;                 /* 모서리를 둥글게 만듭니다. */
+    padding: 1rem;                       /* 안쪽 여백을 설정합니다. */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* 그림자 효과를 줍니다. */
+    border-left: 8px solid;              /* 왼쪽에 8px 두께의 테두리를 설정합니다. (색상은 JS에서 지정) */
+    box-sizing: border-box;              /* padding과 border를 너비에 포함시킵니다. */
+    transition: all 0.3s ease-out;       /* 모든 속성 변경에 부드러운 전환 효과를 줍니다. */
+    display: grid;                       /* Grid 레이아웃을 사용합니다. */
+    grid-template-columns: 80px 1fr;     /* 2개의 열(80px, 나머지 공간)로 구성된 그리드를 만듭니다. */
+    grid-template-rows: auto;            /* 행의 높이는 내용에 따라 자동으로 조절됩니다. */
+    gap: 1.5rem;                         /* 그리드 아이템 사이의 간격을 설정합니다. */
+    align-items: center;                 /* 그리드 아이템들을 수직 중앙 정렬합니다. */
+}
+
+.player-card.submitted { /* 값을 제출한 플레이어 카드 */
+    border-right: 8px solid;             /* 오른쪽에 8px 두께의 테두리를 추가합니다. (색상은 JS에서 지정) */
+    background-color: var(--tint-color); /* 옅은 배경색을 적용합니다. (색상은 JS에서 지정) */
+}
+
+.profile-section { /* 프로필 이미지 영역 */
+    grid-column: 1 / 2;                  /* 그리드의 첫 번째 열을 차지합니다. */
+}
+
+.content-section { /* 이름, 입력폼 등 주 내용 영역 */
+    grid-column: 2 / 3;                  /* 그리드의 두 번째 열을 차지합니다. */
+    display: grid;                       /* Grid 레이아웃을 사용합니다. */
+    grid-template-columns: 1fr auto;     /* 2개의 열(나머지 공간, 자동 너비)로 구성된 그리드를 만듭니다. */
+    align-items: center;                 /* 그리드 아이템들을 수직 중앙 정렬합니다. */
+    min-width: 0;                        /* flex/grid 환경에서 내용이 넘치는 것을 방지합니다. */
+    gap: 1rem;                           /* 그리드 아이템 사이의 간격을 설정합니다. */
+}
+
+.profile-image-preview { /* 카드 안의 프로필 이미지 */
+    width: 80px;                         /* 너비를 80px로 고정합니다. */
+    height: 80px;                        /* 높이를 80px로 고정합니다. */
+    border-radius: 50%;                  /* 원형으로 만듭니다. */
+    object-fit: cover;                   /* 이미지가 영역에 꽉 차도록 비율을 유지하며 잘라냅니다. */
+    border: 3px solid white;             /* 흰색 테두리를 추가합니다. */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 그림자 효과를 줍니다. */
+}
+
+.player-info-text { /* 플레이어 이름 영역 */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    flex-direction: column;              /* 자식 요소를 세로로 쌓습니다. */
+    align-items: flex-start;             /* 자식 요소를 왼쪽 정렬합니다. */
+    justify-content: center;             /* 자식 요소를 수직 중앙 정렬합니다. */
+    min-width: 0;                        /* 내용이 넘치는 것을 방지합니다. */
+}
+
+.player-name { /* 플레이어 이름 텍스트 */
+    font-size: 1.5rem;                   /* 글자 크기를 설정합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    text-align: left;                    /* 텍스트를 왼쪽 정렬합니다. */
+    white-space: nowrap;                 /* 줄바꿈을 하지 않습니다. */
+    overflow: hidden;                    /* 내용이 넘치면 숨깁니다. */
+    text-overflow: ellipsis;             /* 넘치는 텍스트를 '...'으로 표시합니다. */
+}
+
+.input-area { /* 숫자 입력창과 버튼을 감싸는 영역 */
+    grid-column: 2 / 3;                  /* 부모 그리드의 두 번째 열을 차지합니다. */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    margin-left: auto;                   /* 왼쪽 바깥 여백을 자동으로 설정하여 오른쪽으로 밀어냅니다. */
+    align-items: stretch;                /* 자식 요소들의 높이를 컨테이너에 맞게 늘립니다. */
+    justify-content: flex-end;           /* 자식 요소들을 오른쪽 끝으로 정렬합니다. */
+}
+
+.number-input { /* 숫자 입력창 */
+    width: 400px;                        /* 너비를 400px로 고정합니다. */
+    padding: 0.9rem 1rem;                /* 안쪽 여백을 설정합니다. */
+    font-size: 2.5rem;                   /* 글자 크기를 설정합니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+    border: 1px solid #ccc;              /* 회색 테두리를 추가합니다. */
+    border-right: none;                  /* 오른쪽 테두리는 제거하여 버튼과 연결되게 합니다. */
+    border-radius: 8px 0 0 8px;          /* 왼쪽 모서리만 둥글게 만듭니다. */
+    background-color: #f9f9f9;           /* 배경색을 설정합니다. */
+    color: var(--dark-text);             /* 글자 색상을 변수로 지정합니다. */
+}
+
+.btn-submit { /* 완료/취소 버튼 */
+    flex-shrink: 0;                      /* 컨테이너 크기가 줄어들 때 버튼 크기는 줄어들지 않도록 합니다. */
+    padding: 0 1.5rem;                   /* 좌우 안쪽 여백을 설정합니다. */
+    font-size: 1.2rem;                   /* 글자 크기를 설정합니다. */
+    border: 1px solid #ccc;              /* 회색 테두리를 추가합니다. */
+    border-left: none;                   /* 왼쪽 테두리는 제거합니다. */
+    border-radius: 0 8px 8px 0;          /* 오른쪽 모서리만 둥글게 만듭니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    cursor: pointer;                     /* 마우스 커서를 손가락 모양으로 변경합니다. */
+}
+
+.player-status-display { /* 다른 플레이어의 입력 상태 표시 ("입력 완료!", "입력 대기중...") */
+    grid-column: 2 / 3;                  /* 부모 그리드의 두 번째 열을 차지합니다. */
+    font-size: 2.2rem;                   /* 글자 크기를 설정합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    color: #aaa;                         /* 글자 색상을 회색으로 합니다. */
+    text-align: right;                   /* 텍스트를 오른쪽 정렬합니다. */
+}
+
+
+/* --- 7. 누적 랭킹 보드 --- */
+.ranking-board-container { /* 누적 랭킹 보드 전체 컨테이너 */
+    flex: 1;                             /* 게임 보드(flex: 3)에 비해 1/3의 공간을 차지합니다. */
+    min-width: 280px;                    /* 최소 너비를 280px로 설정하여 너무 좁아지는 것을 방지합니다. */
+    background: white;                   /* 배경색을 흰색으로 합니다. */
+    border-radius: 16px;                 /* 모서리를 둥글게 만듭니다. */
+    padding: 1.5rem;                     /* 안쪽 여백을 설정합니다. */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* 그림자 효과를 줍니다. */
+    align-self: flex-start;              /* 부모 Flexbox 컨테이너의 위쪽에 정렬됩니다. */
+}
+
+.ranking-board-container h3 { /* 랭킹 보드 제목 */
+    margin-top: 0;                       /* 위쪽 바깥 여백을 제거합니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+    color: var(--primary-color);         /* 글자 색상을 변수로 지정합니다. */
+    font-size: 1.3rem;                   /* 글자 크기를 설정합니다. */
+}
+
+.ranking-board-container ol { /* 랭킹 목록 */
+    list-style: none;                    /* 목록 앞의 숫자/점을 제거합니다. */
+    padding: 0;                          /* 안쪽 여백을 제거합니다. */
+    margin: 0;                           /* 바깥쪽 여백을 제거합니다. */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    flex-direction: column;              /* 자식 요소(li)들을 세로로 쌓습니다. */
+    gap: 0.8rem;                         /* 목록 아이템 사이의 간격을 설정합니다. */
+}
+
+.ranking-board-container li { /* 랭킹 목록의 각 아이템 */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    align-items: center;                 /* 자식 요소들을 수직 중앙 정렬합니다. */
+    gap: 1rem;                           /* 자식 요소들 사이의 간격을 설정합니다. */
+    padding: 0.5rem;                     /* 안쪽 여백을 설정합니다. */
+    border-radius: 8px;                  /* 모서리를 둥글게 만듭니다. */
+    transition: background-color 0.2s, border-left-color 0.2s; /* 배경색, 테두리색 변경에 전환 효과를 줍니다. */
+    border-left: 5px solid transparent;  /* 왼쪽에 투명한 테두리를 설정하여 1위 강조를 위한 공간을 만듭니다. */
+}
+
+.ranking-board-container li.first-place { /* 1위 아이템 */
+    border-left-color: var(--rank-color, #FFD700); /* 왼쪽 테두리 색상을 플레이어 색상으로 변경합니다. */
+    background-color: #f0f8ff;           /* 배경색을 매우 옅은 하늘색으로 하여 은은하게 강조합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+}
+
+.ranking-board-container .rank { /* 순위 숫자/이모지 */
+    font-size: 1.2rem;                   /* 글자 크기를 설정합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    color: #888;                         /* 글자 색상을 회색으로 합니다. */
+    width: 25px;                         /* 너비를 고정하여 정렬을 맞춥니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+}
+
+.ranking-board-container li.first-place .rank { /* 1위의 순위 이모지 */
+    color: var(--rank-color, #333);      /* 색상을 플레이어 색상으로 변경합니다. */
+}
+
+.ranking-board-container .profile-image-rank { /* 랭킹 보드 안의 프로필 이미지 */
+    width: 40px;                         /* 너비를 40px로 고정합니다. */
+    height: 40px;                        /* 높이를 40px로 고정합니다. */
+    border-radius: 50%;                  /* 원형으로 만듭니다. */
+    object-fit: cover;                   /* 이미지가 영역에 꽉 차도록 비율을 유지하며 잘라냅니다. */
+}
+
+.ranking-board-container .name { /* 랭킹 보드 안의 이름 */
+    flex-grow: 1;                        /* 남는 공간을 모두 차지하여 점수를 오른쪽으로 밀어냅니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    white-space: nowrap;                 /* 줄바꿈을 하지 않습니다. */
+    overflow: hidden;                    /* 내용이 넘치면 숨깁니다. */
+    text-overflow: ellipsis;             /* 넘치는 텍스트를 '...'으로 표시합니다. */
+}
+
+.ranking-board-container .score { /* 랭킹 보드 안의 점수 */
+    font-size: 1rem;                     /* 글자 크기를 설정합니다. */
+    color: #555;                         /* 글자 색상을 설정합니다. */
+}
+
+
+/* --- 8. 라운드 결과 화면 --- */
+#results { /* 결과 화면 전체 영역 */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    gap: 2rem;                           /* 자식 요소 사이의 간격을 설정합니다. */
+    align-items: flex-start;             /* 자식 요소들을 위쪽 기준으로 정렬합니다. */
+}
+
+#result-summary { /* 라운드 결과 요약 영역 (랭킹 리스트) */
+    flex: 3;                             /* 누적 랭킹 보드에 비해 3배의 공간을 차지합니다. */
+    background: white;                   /* 배경색을 흰색으로 합니다. */
+    padding: 2rem;                       /* 안쪽 여백을 설정합니다. */
+    border-radius: 16px;                 /* 모서리를 둥글게 만듭니다. */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* 그림자 효과를 줍니다. */
+}
+
+#result-summary h2 { /* 결과 요약 제목 */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+    color: var(--primary-color);         /* 글자 색상을 변수로 지정합니다. */
+    font-size: 1.8rem;                   /* 글자 크기를 설정합니다. */
+}
+
+.average-value { /* 평균값 표시 */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+    font-size: 1.5rem;                   /* 글자 크기를 설정합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    margin: 1rem 0 1.5rem 0;             /* 위아래 바깥 여백을 설정합니다. */
+}
+
+#ranking-list { /* 라운드 결과 랭킹 목록 */
+    list-style-type: none;               /* 목록 앞의 숫자/점을 제거합니다. */
+    padding: 0;                          /* 안쪽 여백을 제거합니다. */
+}
+
+#ranking-list li { /* 라운드 랭킹의 각 아이템 */
+    background: #f9f9f9;                 /* 배경색을 설정합니다. */
+    margin-bottom: 1rem;                 /* 아래쪽 바깥 여백을 설정합니다. */
+    padding: 0.8rem 1.5rem;              /* 안쪽 여백을 설정합니다. */
+    border-radius: 12px;                 /* 모서리를 둥글게 만듭니다. */
+    border: 1px solid #eee;              /* 매우 옅은 회색 테두리를 추가합니다. */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    justify-content: space-between;      /* 자식 요소들을 양쪽 끝으로 분산 정렬합니다. */
+    align-items: center;                 /* 자식 요소들을 수직 중앙 정렬합니다. */
+    font-size: 1.1rem;                   /* 글자 크기를 설정합니다. */
+}
+
+#ranking-list li.winner { /* 라운드 우승자 아이템 */
+    transform: scale(1.05);              /* 1.05배 확대하여 강조합니다. */
+    font-weight: bold;                   /* 글자를 굵게 합니다. */
+    background: linear-gradient(135deg, #fffde7, #fff3e0); /* 배경에 그라데이션을 적용합니다. */
+    border: 2px solid var(--accent-color); /* 노란색 계열 테두리로 강조합니다. */
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.6); /* 노란색 계열 그림자 효과를 줍니다. */
+}
+
+.player-info { /* 결과 랭킹 안의 플레이어 정보 (순위, 이미지, 이름) */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    align-items: center;                 /* 자식 요소들을 수직 중앙 정렬합니다. */
+    gap: 15px;                           /* 자식 요소들 사이의 간격을 설정합니다. */
+}
+
+.rank-display { /* 라운드 순위 표시 */
+    font-size: 1.8rem;                   /* 글자 크기를 설정합니다. */
+    width: 50px;                         /* 너비를 고정하여 정렬을 맞춥니다. */
+    text-align: center;                  /* 텍스트를 중앙 정렬합니다. */
+}
+
+.profile-image-result { /* 결과 랭킹 안의 프로필 이미지 */
+    width: 80px;                         /* 너비를 80px로 고정합니다. */
+    height: 80px;                        /* 높이를 80px로 고정합니다. */
+    border-radius: 50%;                  /* 원형으로 만듭니다. */
+    object-fit: cover;                   /* 이미지가 영역에 꽉 차도록 비율을 유지하며 잘라냅니다. */
+    border: 3px solid white;             /* 흰색 테두리를 추가합니다. */
+}
+
+.result-details { /* 결과 랭킹 안의 상세 정보 (제출값, 차이, 막대그래프) */
+    display: flex;                       /* Flexbox 레이아웃을 사용합니다. */
+    align-items: center;                 /* 자식 요소들을 수직 중앙 정렬합니다. */
+    gap: 1rem;                           /* 자식 요소들 사이의 간격을 설정합니다. */
+    flex-grow: 1;                        /* 남는 공간을 모두 차지합니다. */
+    justify-content: flex-end;           /* 자식 요소들을 오른쪽 끝으로 정렬합니다. */
+}
+
+.submitted-value { /* 제출한 값 표시 */
+    min-width: 90px;                     /* 최소 너비를 설정하여 정렬을 맞춥니다. */
+}
+
+.diff-value { /* 차이값/비율 표시 */
+    font-size: 0.9rem;                   /* 글자 크기를 설정합니다. */
+    min-width: 170px;                    /* 최소 너비를 설정하여 정렬을 맞춥니다. */
+    text-align: left;                    /* 텍스트를 왼쪽 정렬합니다. */
+}
+
+.diff-bar-wrapper { /* 차이값 막대그래프를 감싸는 영역 */
+    flex-basis: 150px;                   /* Flex 아이템의 기본 크기를 150px로 설정합니다. */
+    height: 16px;                        /* 높이를 16px로 고정합니다. */
+    background-color: #e0e0e0;           /* 배경색(그래프의 바탕)을 설정합니다. */
+    border-radius: 8px;                  /* 모서리를 둥글게 만듭니다. */
+}
+
+.diff-bar { /* 실제 차이값을 나타내는 막대그래프 */
+    height: 100%;                        /* 부모 요소의 높이를 100% 채웁니다. */
+    border-radius: 8px;                  /* 모서리를 둥글게 만듭니다. */
+}

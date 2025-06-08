@@ -10,7 +10,7 @@
     <div id="toast-container"></div>
     <div id="app-wrapper">
         <div id="lobby-container" class="lobby-container">
-            <h1>🎯 평균값 게임</h1>
+            <h1>평균값 게임</h1>
             <div class="lobby-step">
                 <h2>닉네임 & 프로필 설정</h2>
                 <div class="lobby-profile-container">
@@ -34,23 +34,31 @@
         </div>
 
         <div id="game-container" class="container hidden">
-            <h1>🎯 평균값 게임</h1>
+            <h1>평균값 게임</h1>
             <div id="top-bar">
                 <div class="room-info">
                     <button id="copy-code-btn">방 초대코드 복사</button>
                 </div>
                 <div id="host-controls">
                     <button id="view-results-button" class="hidden" disabled>결과 보기</button>
-                    <button id="reset-round-button" class="hidden">이번 라운드 초기화</button>
+                    <button id="reset-round-button" class="hidden">다음 질문</button>
                 </div>
             </div>
             <div id="question-container" class="hidden">
-                <input type="text" id="question-input" placeholder="여기에 질문을 입력하세요 (정수로 답할수 있어야 합니다)">
+                <input type="text" id="question-input" placeholder="Q. 여기에 질문을 입력하세요">
             </div>
+            
+            <!-- 결과 화면 -->
             <div id="results" class="hidden">
-                 <div id="result-summary"></div>
+                <div id="result-summary"></div>
+                <div id="ranking-board-container-result" class="ranking-board-container"></div>
             </div>
-            <div id="game-board"></div>
+            
+            <!-- 메인 게임 영역 (플레이어 카드 + 랭킹 보드) -->
+            <div id="main-game-area" class="hidden">
+                <div id="game-board"></div>
+                <div id="ranking-board-container" class="ranking-board-container"></div>
+            </div>
         </div>
     </div>
 
