@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>평균값 게임 - 온라인</title>
+    <title>1등은 평균치라고 말했잖아요!!</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="in-lobby">
     <div id="toast-container"></div>
     <div id="app-wrapper">
         <div id="lobby-container" class="lobby-container">
-            <h1>평균값 게임</h1>
+            <h1>1등은 평균치라고 말했잖아요!!</h1>
             <div class="lobby-step">
                 <h2>닉네임 & 프로필 설정</h2>
                 <div class="lobby-profile-container">
+                    <!-- [수정됨] 기본 프로필 이미지 SVG 코드 최종 복원 (더 이상 수정하지 않습니다) -->
                     <img id="lobby-profile-preview" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2EwYTVhZCI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MxLjY2IDAgMyAxLjM0IDMgM3MtMS4zNCAzLTMgMy0zLTEuMzQtMy0zIDEuMzQtMyAzLTN6bTAgMTRjLTIuNzEgMC01LjgwLTEuMjgtNy43NS0zLjQ0Ljg5LTEuNDYgMy4yMi0yLjU2IDUuNzUtMi41NiBjMi41MyAwIDQuODYgMS4xIDUuNzUgMi41NkMxNy44IDE3LjcyIDE0LjcxIDE5IDEyIDE5eiIvPjwvc3ZnPg==" alt="Profile Preview">
                     <input type="file" id="lobby-profile-input" class="hidden" accept="image/*">
                     <p>이미지를 클릭하여 변경</p>
@@ -27,37 +28,59 @@
                 </div>
                 <div class="action-box">
                     <h3>초대 코드로 참가</h3>
-                    <input type="text" id="room-code-input" placeholder="초대 코드 입력">
+                    <input type="password" id="room-code-input" placeholder="초대 코드 입력">
                     <button id="join-room-btn">참가하기</button>
                 </div>
             </div>
         </div>
 
         <div id="game-container" class="container hidden">
-            <h1>평균값 게임</h1>
+            <div id="player-count-container">
+                <div id="player-count-display" class="info-box"></div>
+            </div>
+
             <div id="top-bar">
-                <div class="room-info">
+                <div class="top-bar-left">
                     <button id="copy-code-btn">방 초대코드 복사</button>
                 </div>
-                <div id="host-controls">
-                    <button id="view-results-button" class="hidden" disabled>결과 보기</button>
-                    <button id="reset-round-button" class="hidden">다음 질문</button>
+                <h1 class="top-bar-title">1등은 평균치라고 말했잖아요!!</h1>
+                <div class="top-bar-right">
+                    <div id="host-controls">
+                        <button id="view-results-button" class="hidden" disabled>결과 보기</button>
+                        <button id="reset-round-button" class="hidden">다음 질문</button>
+                    </div>
                 </div>
             </div>
+
             <div id="question-container" class="hidden">
-                <input type="text" id="question-input" placeholder="Q. 여기에 질문을 입력하세요">
+                <div class="question-input-wrapper">
+                    <input type="text" id="question-input" placeholder="Q. 여기에 질문을 입력하세요">
+                    <button id="confirm-question-btn" class="hidden">질문 확정</button>
+                </div>
             </div>
             
-            <!-- 결과 화면 -->
             <div id="results" class="hidden">
-                <div id="result-summary"></div>
+                <div id="result-summary">
+                    <div class="result-header">
+                        <h2></h2>
+                        <button id="back-to-game-btn" class="hidden">게임으로 돌아가기</button>
+                    </div>
+                    <p class="average-value"></p>
+                    <ol id="ranking-list"></ol>
+                </div>
                 <div id="ranking-board-container-result" class="ranking-board-container"></div>
             </div>
             
-            <!-- 메인 게임 영역 (플레이어 카드 + 랭킹 보드) -->
             <div id="main-game-area" class="hidden">
                 <div id="game-board"></div>
-                <div id="ranking-board-container" class="ranking-board-container"></div>
+                <div id="side-panel-container" class="ranking-board-container">
+                    <div class="side-panel-header">
+                        <h3 id="side-panel-title">누적 랭킹</h3>
+                        <button id="toggle-history-btn">과거 기록</button>
+                    </div>
+                    <div id="ranking-board"></div>
+                    <div id="history-board" class="hidden"></div>
+                </div>
             </div>
         </div>
     </div>

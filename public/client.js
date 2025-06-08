@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
 
     // --- DOM Elements ---
+    const playerCountDisplay = document.getElementById('player-count-display');
     const toastContainer = document.getElementById('toast-container');
     const lobbyContainer = document.getElementById('lobby-container');
     const gameContainer = document.getElementById('game-container');
@@ -12,24 +13,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const createRoomBtn = document.getElementById('create-room-btn');
     const roomCodeInput = document.getElementById('room-code-input');
     const joinRoomBtn = document.getElementById('join-room-btn');
-    
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const hostControls = document.getElementById('host-controls');
     const questionContainer = document.getElementById('question-container');
     const questionInput = document.getElementById('question-input');
-    const mainGameArea = document.getElementById('main-game-area'); // 메인 영역
+    const confirmQuestionBtn = document.getElementById('confirm-question-btn');
+    const mainGameArea = document.getElementById('main-game-area');
     const gameBoard = document.getElementById('game-board');
-    const rankingBoardContainer = document.getElementById('ranking-board-container'); // 질문 페이즈 랭킹 보드
-    const rankingBoardContainerResult = document.getElementById('ranking-board-container-result'); // 결과 페이즈 랭킹 보드
+    const sidePanelContainer = document.getElementById('side-panel-container');
+    const sidePanelTitle = document.getElementById('side-panel-title');
+    const toggleHistoryBtn = document.getElementById('toggle-history-btn');
+    const rankingBoard = document.getElementById('ranking-board');
+    const historyBoard = document.getElementById('history-board');
     const resultsSection = document.getElementById('results');
     const resultSummary = document.getElementById('result-summary');
+    const backToGameBtn = document.getElementById('back-to-game-btn');
     const viewResultsButton = document.getElementById('view-results-button');
     const resetRoundButton = document.getElementById('reset-round-button');
+
+    // [추가됨] 페이지 로드 시 닉네임 입력창 비우기
+    playerNameInput.value = '';
 
     // --- Global State ---
     let myRoomCode = '';
     let myPlayerId = '';
     let myProfileImageSrc = lobbyProfilePreview.src;
+    let currentGameState = null;
+    let isHistoryView = false;
 
     // --- Lobby Logic ---
     const enterGameView = () => {
@@ -38,9 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameContainer.classList.remove('hidden');
     };
 
-    lobbyProfilePreview.addEventListener('click', () => {
-        lobbyProfileInput.click();
-    });
+    lobbyProfilePreview.addEventListener('click', () => lobbyProfileInput.click());
 
     lobbyProfileInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
@@ -55,11 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     playerNameInput.addEventListener('input', () => {
-        if (playerNameInput.value.trim()) {
-            roomActions.classList.remove('hidden');
-        } else {
-            roomActions.classList.add('hidden');
-        }
+        roomActions.classList.toggle('hidden', !playerNameInput.value.trim());
     });
 
     createRoomBtn.addEventListener('click', () => {
@@ -87,42 +91,51 @@ document.addEventListener('DOMContentLoaded', () => {
     
     socket.on('updateGameState', (gameState) => {
         if (!gameState) return;
+        currentGameState = gameState;
         renderGame(gameState);
     });
 
     socket.on('playerJoined', ({ playerName }) => showToast(`${playerName} 님이 입장했습니다.`, 'join'));
     socket.on('playerLeft', ({ playerName }) => showToast(`${playerName} 님이 퇴장했습니다.`, 'leave'));
     socket.on('error', ({ message }) => { alert(message); });
+    
+    socket.on('newHost', ({ playerName }) => {
+        showToast(`${playerName} 님이 새로운 방장이 되었습니다.`, 'info');
+    });
 
     // --- Game Logic ---
     copyCodeBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(myRoomCode).then(() => showToast('초대 코드가 복사되었습니다!'));
     });
 
-    questionInput.addEventListener('input', () => {
-        socket.emit('updateQuestion', { roomCode: myRoomCode, question: questionInput.value });
+    confirmQuestionBtn.addEventListener('click', () => {
+        if (questionInput.disabled) {
+            socket.emit('updateQuestion', { roomCode: myRoomCode, question: '' });
+        } else {
+            const question = questionInput.value.trim();
+            if (!question) return alert('질문을 입력해주세요.');
+            socket.emit('updateQuestion', { roomCode: myRoomCode, question });
+        }
+    });
+    
+    questionInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || questionInput.disabled) {
+            return;
+        }
+        event.preventDefault();
+        confirmQuestionBtn.click();
     });
     
     gameBoard.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        const target = event.target;
-        if (target.classList.contains('number-input')) {
-            event.preventDefault();
-            const card = target.closest('.player-card');
-            if (card) card.querySelector('.btn-submit').click();
-        }
+        if (event.key !== 'Enter' || !event.target.classList.contains('number-input')) return;
+        event.preventDefault();
+        const card = event.target.closest('.player-card');
+        if (card) card.querySelector('.btn-submit').click();
     });
     
     gameBoard.addEventListener('input', (event) => {
-        const target = event.target;
-        if (target.classList.contains('number-input')) {
-            const originalValue = target.value;
-            const numericValue = originalValue.replace(/[^0-9]/g, '');
-            if (originalValue !== numericValue) {
-                alert('숫자만 입력할 수 있습니다.');
-            }
-            target.value = numericValue;
-        }
+        if (!event.target.classList.contains('number-input')) return;
+        event.target.value = event.target.value.replace(/[^0-9]/g, '');
     });
 
     gameBoard.addEventListener('click', (event) => {
@@ -139,71 +152,93 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.emit('submitValue', { 
             roomCode: myRoomCode, 
-            value: isSubmitted ? null : parseInt(numberInput.value),
+            value: isSubmitted ? null : parseInt(numberInput.value, 10),
             submitted: !isSubmitted
         });
+    });
+
+    toggleHistoryBtn.addEventListener('click', () => {
+        isHistoryView = !isHistoryView;
+        renderSidePanel(currentGameState);
+    });
+    
+    historyBoard.addEventListener('click', (event) => {
+        const historyItem = event.target.closest('li[data-history-index]');
+        if (historyItem && currentGameState) {
+            const index = parseInt(historyItem.dataset.historyIndex, 10);
+            const pastRound = currentGameState.history[index];
+            if (pastRound) {
+                renderPastResults(pastRound);
+            }
+        }
+    });
+    
+    backToGameBtn.addEventListener('click', () => {
+        renderGame(currentGameState);
     });
     
     // --- Host Controls ---
     viewResultsButton.addEventListener('click', () => socket.emit('viewResults', { roomCode: myRoomCode }));
-    resetRoundButton.addEventListener('click', () => socket.emit('resetRound', { roomCode: myRoomCode }));
+    resetRoundButton.addEventListener('click', () => {
+        socket.emit('resetRound', { roomCode: myRoomCode });
+    });
 
     // --- Helper Functions ---
     function formatNumber(num) {
-        if (Number.isInteger(num)) return num;
-        return num.toFixed(1);
+        return Number.isInteger(num) ? num : num.toFixed(1);
     }
 
     // --- Render Functions ---
     function renderGame(gameState) {
         const players = Object.values(gameState.players);
         const me = players.find(p => p.id === myPlayerId);
-        const amIHost = me && me.isHost;
-        const isWaitingPhase = gameState.state !== 'results';
+        if (!me) return;
+        
+        const amIHost = me.isHost;
+        const isWaitingPhase = gameState.state === 'waiting';
 
-        // UI 요소 보이기/숨기기
-        questionContainer.classList.toggle('hidden', !isWaitingPhase);
+        playerCountDisplay.textContent = `접속 인원: ${players.length} / ${gameState.maxPlayers}`;
+        
         mainGameArea.classList.toggle('hidden', !isWaitingPhase);
-        resultsSection.classList.toggle('hidden', isWaitingPhase);
+        resultsSection.classList.add('hidden'); // 항상 숨김으로 시작
+        questionContainer.classList.toggle('hidden', !isWaitingPhase);
+        
         hostControls.classList.toggle('hidden', !amIHost);
         viewResultsButton.classList.toggle('hidden', !isWaitingPhase || !amIHost);
         resetRoundButton.classList.toggle('hidden', isWaitingPhase || !amIHost);
 
+        const isQuestionConfirmed = !!gameState.question;
         questionInput.value = gameState.question;
-        questionInput.disabled = !amIHost;
+        questionInput.classList.toggle('confirmed-question', isQuestionConfirmed);
 
-        // 누적 순위 계산 (점수가 낮을수록 순위가 높음)
-        const sortedByScore = [...players].sort((a, b) => a.cumulativeScore - b.cumulativeScore);
-        let currentRank = 1;
-        for (let i = 0; i < sortedByScore.length; i++) {
-            if (i > 0 && sortedByScore[i].cumulativeScore > sortedByScore[i-1].cumulativeScore) {
-                currentRank = i + 1;
-            }
-            const playerToUpdate = players.find(p => p.id === sortedByScore[i].id);
-            if (playerToUpdate) {
-                playerToUpdate.cumulativeRank = currentRank;
+        if (amIHost && isWaitingPhase) {
+            confirmQuestionBtn.classList.remove('hidden');
+            questionInput.placeholder = 'Q. 여기에 질문을 입력하세요';
+            questionInput.disabled = isQuestionConfirmed;
+            confirmQuestionBtn.textContent = isQuestionConfirmed ? '질문 수정' : '질문 확정';
+            confirmQuestionBtn.className = isQuestionConfirmed ? 'edit-mode' : 'confirm-mode';
+        } else {
+            confirmQuestionBtn.classList.add('hidden');
+            questionInput.disabled = true;
+            if (isWaitingPhase) {
+                questionInput.placeholder = isQuestionConfirmed ? 'Q. 여기에 질문을 입력하세요' : '질문 입력 중...';
             }
         }
-        
-        // 플레이어 카드 렌더링
+
         gameBoard.innerHTML = '';
         players.forEach(player => {
             gameBoard.appendChild(createPlayerCard(player, player.id === myPlayerId));
         });
 
-        // 누적 랭킹 보드 렌더링 (화면 상태에 따라 다른 위치에)
         if (isWaitingPhase) {
-            renderRankingBoard(sortedByScore, rankingBoardContainer);
+            renderSidePanel(gameState);
         } else {
-            renderRankingBoard(sortedByScore, rankingBoardContainerResult);
-        }
-        
-        const allSubmitted = players.length > 0 && players.every(p => p.submitted);
-        viewResultsButton.disabled = !allSubmitted;
-        
-        if (gameState.state === 'results') {
+            resultsSection.classList.remove('hidden');
+            mainGameArea.classList.add('hidden');
             renderResults(gameState);
         }
+
+        viewResultsButton.disabled = !(players.length > 0 && players.every(p => p.submitted));
     }
     
     function createPlayerCard(player, isMe) {
@@ -211,105 +246,146 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'player-card';
         card.dataset.playerId = player.id;
         card.style.borderColor = player.color;
-        card.style.setProperty('--tint-color', player.color + '20');
-
-        if (player.submitted) card.classList.add('submitted');
+        card.style.setProperty('--tint-color', `${player.color}20`);
+        card.classList.toggle('submitted', player.submitted);
 
         const textColor = (player.color === '#fff176') ? '#000000' : '#ffffff';
         
-        let contentHtml;
-        if (isMe) {
-            // 본인 카드
-            contentHtml = `
-                <div class="player-info-text">
-                    <div class="player-name">${player.name}</div>
-                </div>
-                <div class="input-area">
-                    <input type="text" class="number-input" placeholder="-" value="${player.value || ''}" ${player.submitted ? 'disabled' : ''}>
-                    <button class="btn-submit" data-action="submit" style="background-color: ${player.color}; color: ${textColor};">${player.submitted ? '취소' : '완료'}</button>
-                </div>
-            `;
-        } else {
-            // 다른 플레이어 카드
-            const statusMessage = player.submitted ? '입력 완료!' : '입력 대기중...';
-            contentHtml = `
-                <div class="player-info-text">
-                     <div class="player-name">${player.name}</div>
-                </div>
-                <div class="player-status-display">${statusMessage}</div>
-            `;
-        }
+        const playerInfoHtml = `<div class="player-info-text"><div class="player-name">${player.name}</div></div>`;
+        const actionHtml = isMe ?
+            `<div class="input-area">
+                <input type="text" class="number-input" placeholder="-" value="${player.value || ''}" ${player.submitted ? 'disabled' : ''}>
+                <button class="btn-submit" data-action="submit" style="background-color: ${player.color}; color: ${textColor};">${player.submitted ? '취소' : '완료'}</button>
+            </div>` :
+            `<div class="player-status-display">${player.submitted ? '입력 완료!' : '입력 대기중...'}</div>`;
         
         card.innerHTML = `
-            <div class="profile-section">
-                <div class="profile-image-container">
-                    <img src="${player.imageSrc}" class="profile-image-preview">
-                </div>
-            </div>
-            <div class="content-section">
-                ${contentHtml}
-            </div>`;
+            <div class="profile-section"><img src="${player.imageSrc}" class="profile-image-preview" alt="${player.name} profile"></div>
+            <div class="content-section">${playerInfoHtml}${actionHtml}</div>`;
         return card;
     }
 
-    function renderRankingBoard(sortedPlayers, container) {
-        const rankingListHtml = sortedPlayers.map(p => {
+    function renderSidePanel(gameState) {
+        rankingBoard.classList.toggle('hidden', isHistoryView);
+        historyBoard.classList.toggle('hidden', !isHistoryView);
+
+        if (isHistoryView) {
+            sidePanelTitle.textContent = '과거 질문';
+            toggleHistoryBtn.textContent = '랭킹 보기';
+            renderHistoryBoard(gameState.history);
+        } else {
+            sidePanelTitle.textContent = '누적 랭킹';
+            toggleHistoryBtn.textContent = '과거 기록';
+            renderRankingBoard(Object.values(gameState.players));
+        }
+    }
+
+    function renderRankingBoard(players) {
+        const sortedPlayers = [...players].sort((a, b) => a.cumulativeScore - b.cumulativeScore);
+        let rank = 1;
+        for (let i = 0; i < sortedPlayers.length; i++) {
+            if (i > 0 && sortedPlayers[i].cumulativeScore > sortedPlayers[i-1].cumulativeScore) {
+                rank = i + 1;
+            }
+            sortedPlayers[i].cumulativeRank = rank;
+        }
+
+        const listItems = sortedPlayers.map(p => {
             const isFirst = p.cumulativeRank === 1;
             const rankDisplay = isFirst ? '👑' : p.cumulativeRank;
-            // 1위인 경우, 플레이어 색상으로 스타일링
-            const rankStyle = isFirst ? `style="--rank-color: ${p.color}"` : '';
             return `
-            <li class="${isFirst ? 'first-place' : ''}" ${rankStyle}>
+            <li class="${isFirst ? 'first-place' : ''}" style="--rank-color: ${p.color}">
                 <span class="rank">${rankDisplay}</span>
-                <img src="${p.imageSrc}" class="profile-image-rank">
+                <img src="${p.imageSrc}" class="profile-image-rank" alt="${p.name} profile">
                 <span class="name">${p.name}</span>
                 <span class="score">${p.cumulativeScore.toFixed(1)}%</span>
-            </li>
-        `;
+            </li>`;
         }).join('');
+        rankingBoard.innerHTML = `<ol>${listItems}</ol>`;
+    }
+    
+    function renderHistoryBoard(history) {
+        if (history.length === 0) {
+            historyBoard.innerHTML = '<p style="text-align:center; color:#888;">기록이 없습니다.</p>';
+            return;
+        }
+        const listItems = history.map((round, index) => `
+            <li data-history-index="${index}">
+                ${round.question || '질문 없는 라운드'}
+            </li>
+        `).reverse().join('');
+        historyBoard.innerHTML = `<ol>${listItems}</ol>`;
+    }
 
-        container.innerHTML = `
-            <h3>누적 랭킹</h3>
-            <ol>${rankingListHtml}</ol>
-        `;
+    function renderPastResults(roundData) {
+        const { question, average, players } = roundData;
+        const rankingHtml = renderResultsHtml(players, average);
+
+        const resultHeader = resultSummary.querySelector('.result-header h2');
+        const averageValue = resultSummary.querySelector('.average-value');
+        const rankingList = resultSummary.querySelector('#ranking-list');
+
+        resultHeader.textContent = question || '지난 라운드 결과';
+        averageValue.textContent = `평균값: ${average.toFixed(2)}`;
+        rankingList.innerHTML = rankingHtml;
+
+        mainGameArea.classList.add('hidden');
+        resultsSection.classList.remove('hidden');
+        backToGameBtn.classList.remove('hidden');
     }
     
     function renderResults(gameState) {
-        const players = Object.values(gameState.players).filter(p => p.submitted);
-        if (players.length === 0) return;
-        
-        const total = players.reduce((sum, p) => sum + p.value, 0);
-        const average = total / players.length;
+        const submittedPlayers = Object.values(gameState.players).filter(p => p.submitted);
+        const resultHeader = resultSummary.querySelector('.result-header h2');
+        const averageValue = resultSummary.querySelector('.average-value');
+        const rankingList = resultSummary.querySelector('#ranking-list');
 
+        if (submittedPlayers.length === 0) {
+            resultHeader.textContent = gameState.question || '이번 라운드 결과';
+            averageValue.textContent = '';
+            rankingList.innerHTML = `<p>제출한 플레이어가 없습니다.</p>`;
+            return;
+        }
+        
+        const total = submittedPlayers.reduce((sum, p) => sum + p.value, 0);
+        const average = total / submittedPlayers.length;
+        
+        const rankingHtml = renderResultsHtml(submittedPlayers, average);
+
+        resultHeader.textContent = gameState.question || '이번 라운드 결과';
+        averageValue.textContent = `평균값: ${average.toFixed(2)}`;
+        rankingList.innerHTML = rankingHtml;
+    }
+
+    function renderResultsHtml(players, average) {
         players.forEach(p => {
             p.diff = Math.abs(p.value - average);
             p.diffRatio = (average > 0) ? (p.diff / average) * 100 : (p.value === 0 ? 0 : 100);
         });
         
         players.sort((a, b) => a.diff - b.diff);
-
-        let rank = 1;
-        for (let i = 0; i < players.length; i++) {
-            if (i > 0 && players[i].diff > players[i-1].diff) rank = i + 1;
-            players[i].rank = rank;
-        }
-        const maxRank = Math.max(...players.map(p => p.rank));
         const maxDiffRatio = Math.max(...players.map(p => p.diffRatio), 1);
         
-        const rankingHtml = players.map(p => {
-            let rankDisplay;
-            if (p.rank === 1) { rankDisplay = '👑'; } 
-            else if (p.rank === maxRank && players.length > 1) { rankDisplay = '💀'; }
-            else { rankDisplay = `${p.rank}위`; }
+        let currentRank = 0;
+        let lastDiff = -1;
+        return players.map((p, i) => {
+            if (p.diff > lastDiff) {
+                currentRank = i + 1;
+                lastDiff = p.diff;
+            }
             
-            const isWinner = p.rank === 1;
+            let rankDisplay = `${currentRank}위`;
+            if (currentRank === 1) rankDisplay = '👑';
+            else if (currentRank === players.length && players.length > 1) rankDisplay = '💀';
+            
+            const isWinner = currentRank === 1;
             const barWidth = (p.diffRatio / maxDiffRatio) * 100;
 
             return `
             <li class="${isWinner ? 'winner' : ''}" style="${isWinner ? `--winner-color: ${p.color};` : ''}">
                 <div class="player-info">
                     <span class="rank-display">${rankDisplay}</span>
-                    <img src="${p.imageSrc}" class="profile-image-result">
+                    <img src="${p.imageSrc}" class="profile-image-result" alt="${p.name} profile">
                     <span>${p.name}</span>
                 </div>
                 <div class="result-details">
@@ -321,11 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </li>`;
         }).join('');
-
-        resultSummary.innerHTML = `
-            <h2>${gameState.question || '이번 라운드 결과'}</h2>
-            <p class="average-value">평균값: ${average.toFixed(2)}</p>
-            <ol id="ranking-list">${rankingHtml}</ol>`;
     }
 
     function showToast(message, type = 'info') {
@@ -333,7 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.className = `toast ${type}`;
         toast.textContent = message;
         toastContainer.appendChild(toast);
-
         setTimeout(() => {
             toast.classList.add('fade-out');
             setTimeout(() => toast.remove(), 500);
